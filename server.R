@@ -1,8 +1,8 @@
-library(shiny)
-library(tm)
-library(SnowballC)
-library(RWeka)
-library(stringr)
+# library(shiny)
+# library(tm)
+# library(SnowballC)
+# library(RWeka)
+# library(stringr)
 
 # setwd("D:/RWorking Directory/CapstoneProject/Dataset/EN")
 # 
