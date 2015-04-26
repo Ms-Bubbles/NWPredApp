@@ -21,9 +21,9 @@ library(stringr)
 # # 
 # #Sample the data to smaller portions for better performance
 # set.seed(1210)
-# en.news <- en.news[sample(1:length(en.news), 25000, replace = FALSE)]
-# en.blog <- en.blog[sample(1:length(en.blog), 25000, replace = FALSE)]
-# en.twitter <- en.twitter[sample(1:length(en.twitter), 25000, replace = FALSE)]
+# en.news <- en.news[sample(1:length(en.news), 12000, replace = FALSE)]
+# en.blog <- en.blog[sample(1:length(en.blog), 12000, replace = FALSE)]
+# en.twitter <- en.twitter[sample(1:length(en.twitter), 12000, replace = FALSE)]
 # 
 # en.news <- as.String(en.news)
 # en.blog <- as.String(en.blog)
@@ -31,7 +31,7 @@ library(stringr)
 # 
 # #Create a new directory for the data, which will be used for the corpus creation
 # 
-# mainDir <- getwd()
+mainDir <- getwd()
 # subDir <- "TrainSet"
 # 
 # dir.create(file.path(mainDir, subDir), showWarnings = FALSE)
@@ -39,28 +39,31 @@ library(stringr)
 # 
 # setwd(new.dir)
 # 
-# write(en.news, file = "en.news.txt")
-# write(en.blog, file = "en.blog.txt")
-# write(en.twitter, file = "en.twitter.txt")
-# write(en.aca1, file = "en.aca1.txt")
-# write(en.aca2, file = "en.aca2.txt")
-# write(en.fic1, file = "en.fic1.txt")
-# write(en.fic2, file = "en.fic2.txt")
-# write(en.mag1, file = "en.mag1.txt")
-# write(en.mag2, file = "en.mag2.txt")
-# write(en.book, file = "en.book.txt")
-# write(profanity.EN, file = "profanity.EN.txt")
+#Read in various types of text files
+ennews <- readLines("ennews.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enblog <- readLines("enblog.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+entwitter <- readLines("entwitter.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enaca1 <- readLines("enaca1.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enaca2 <- readLines("enaca2.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enfic1 <- readLines("enfic1.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enfic2 <- readLines("enfic2.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enmag1 <- readLines("enmag1.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enmag2 <- readLines("enmag2.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+enbook <- readLines("enbook.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+profanity <- readLines("profanity.txt", skipNul = TRUE, warn = FALSE, encoding = "UTF-8")
+
 
 #Create corpus and clean the data
 stopwords.EN <- stopwords(kind = "en")
 stopwords.EN.v <- unlist(strsplit(stopwords.EN, " ", fixed = TRUE))
-profanity.EN.v <- unlist(strsplit(profanity.EN, "\n"))
+profanity.EN.v <- unlist(strsplit(profanity, "\n"))
 en.corpus <- VCorpus(DirSource(mainDir),readerControl = list(language = "en"))
-en.corpus <- tm_map(en.corpus, removeWords, stopwords.EN)
-en.corpus <- tm_map(en.corpus, removeWords, profanity.EN.v)
 en.corpus <- tm_map(en.corpus, content_transformer(tolower))
 en.corpus <- tm_map(en.corpus, content_transformer(removePunctuation))
 en.corpus <- tm_map(en.corpus, content_transformer(removeNumbers))
+en.corpus <- tm_map(en.corpus, removeWords, stopwords.EN)
+en.corpus <- tm_map(en.corpus, removeWords, profanity.EN.v)
+
 
 #en.corpus <- tm_map(en.corpus, stemDocument)
 en.corpus <- tm_map(en.corpus, stripWhitespace)
@@ -83,7 +86,7 @@ remove <- c('[\\]\\[\\(\\)-/+;:#%$^\\*=^~\\{\\}/"<>«»_\\\\“\\”°•‘’�
 TDM.EN.df.4$Tokens <- gsub(paste(remove,collapse="|"), "", TDM.EN.df.4$Tokens)
 
 ##Extract last word
-library(stringr)
+
 TDM.EN.df.4$LW <- str_extract(TDM.EN.df.4$Tokens, '\\w+$')
 
 #N3s
@@ -138,19 +141,19 @@ clean <- function(x) {
 # Next word generation function
 
 nextWord <- function(string) {
-#         
-#         if (sum((sapply(gregexpr("\\W+", string), length) + 1)) < 3) {
-#                         
-#                                 stop("Exiting... String is too short.")
-#                         
-#                         } else {
+        #         
+        #         if (sum((sapply(gregexpr("\\W+", string), length) + 1)) < 3) {
+        #                         
+        #                                 stop("Exiting... String is too short.")
+        #                         
+        #                         } else {
         
         search.res <- TDM.EN.df.4[grep(string, TDM.EN.df.4$Tokens),]
         search.res <- search.res[order(search.res$TDM.EN.matrix.4, decreasing=TRUE),]
         res <- head(search.res$LW)
         resList <- c(resList, res)
         print(resList)
-#                         }
+        #                         }
         
         #If no terms were found, shortening the search to 2 terms, and then 1
         
@@ -195,21 +198,20 @@ shinyServer(function(input, output) {
         
         
         withProgress(message = "Cleaning user string", value = 0.1, {
-        
+                
                 str <- reactive({ 
-                        start <- Sys.time()
                         clean(input$ustring) })
-                 incProgress(0.1) 
-                 setProgress(1, message = "String has been cleaned")
-                })
-#         output$cleanStr <- renderText({ str() })
+                incProgress(0.1) 
+                setProgress(1, message = "String has been cleaned")
+        })
+        #         output$cleanStr <- renderText({ str() })
         
         withProgress(message = "Predicting next word...", value = 0.1, {
-        recNW <- reactive({ nextWord(str()) })   
-        incProgress(0.1) 
-        setProgress(1, message = "Prediction completed")
+                recNW <- reactive({ nextWord(str()) })   
+                incProgress(0.1) 
+                setProgress(1, message = "Prediction completed")
         })
         
         output$results <- renderText({ unique(recNW()) })
-        output$time <- renderText({ Sys.time() - start()  })
+        output$time <- renderText({ system.time(recNW())  })
 })
